@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Container, Table } from "react-bootstrap";
 import { Book } from "../types/types";
 import { faker } from '@faker-js/faker';
+import InfiniteScroll from "react-infinite-scroll-component";
 
 const capitalizeTitle = (title: string) => {
     return title.charAt(0).toUpperCase() + title.slice(1);
@@ -31,35 +32,50 @@ const generateRandomBooks = ( page: number ): Book[] => {
 
 const BooksTable = () => {
     const [books, setBooks] = useState<Book[]>([]);
+    const [page, setPage] = useState(0);
 
     useEffect(() => {
         setBooks(generateRandomBooks(0));
     }, []);
 
+    const fetchMoreBooks = () => {
+        setPage(prevPage => {
+            const nextPage = prevPage + 1;
+            setBooks(prevBooks => [...prevBooks, ...generateRandomBooks( nextPage )]);
+            return nextPage;
+        });
+    };
+
     return (
         <Container>
-            <Table striped bordered hover>
-                <thead className="table-dark">
-                    <tr>
-                        <th>Index</th>
-                        <th>ISBN</th>
-                        <th>Title</th>
-                        <th>Author</th>
-                        <th>Publisher</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {books.map((book: Book) => (
-                        <tr key={book.isbn}>
-                            <td>{book.index}</td>
-                            <td>{book.isbn}</td>
-                            <td>{book.title}</td>
-                            <td>{book.author}</td>
-                            <td>{book.publisher}</td>
+            <InfiniteScroll
+                dataLength={books.length}
+                next={fetchMoreBooks}
+                hasMore={true}
+                loader={<h4>Loading...</h4>} >
+                <Table striped bordered hover>
+                    <thead className="table-dark">
+                        <tr>
+                            <th>Index</th>
+                            <th>ISBN</th>
+                            <th>Title</th>
+                            <th>Author</th>
+                            <th>Publisher</th>
                         </tr>
-                    ))}
-                </tbody>
-            </Table>
+                    </thead>
+                    <tbody>
+                        {books.map((book: Book) => (
+                            <tr key={book.isbn}>
+                                <td>{book.index}</td>
+                                <td>{book.isbn}</td>
+                                <td>{book.title}</td>
+                                <td>{book.author}</td>
+                                <td>{book.publisher}</td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </Table>
+            </InfiniteScroll>
         </Container>
     )
 }
