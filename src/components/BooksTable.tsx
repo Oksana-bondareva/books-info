@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
-import { Container, Table } from "react-bootstrap";
+import { Container, Table, Dropdown } from "react-bootstrap";
 import { Book } from "../types/types";
-import { faker } from '@faker-js/faker';
+import { de, fr, Faker, en, faker } from '@faker-js/faker';
 import InfiniteScroll from "react-infinite-scroll-component";
+import { useLanguage } from "../context/LanguageProvider";
 
 const capitalizeTitle = (title: string) => {
     return title.charAt(0).toUpperCase() + title.slice(1);
@@ -20,11 +21,21 @@ const generateISBN = () => {
     return parts.join('-');
 };
 
-const generateRandomBooks = ( page: number ): Book[] => {
+const languages: { [key: string]: string } = {
+    en: 'English',
+    fr: 'French',
+    de: 'German',
+};
+
+const generateRandomBooks = ( page: number, language: string ): Book[] => {
+    const faker = new Faker({
+        locale: language === 'fr' ? [fr] : language === 'de' ? [de] : [en],
+    });
+
     return Array.from({ length: 20 }, (_, index) => ({
         index: page * 20 + index + 1,
         isbn: generateISBN(),
-        title: capitalizeTitle(faker.lorem.words()),
+        title: capitalizeTitle(faker.word.words()),
         author: faker.person.fullName(),
         publisher: `${faker.company.name()}, ${faker.date.past().getFullYear()}`,
     }));
@@ -33,21 +44,34 @@ const generateRandomBooks = ( page: number ): Book[] => {
 const BooksTable = () => {
     const [books, setBooks] = useState<Book[]>([]);
     const [page, setPage] = useState(0);
+    const { language, setLanguage } = useLanguage();
 
     useEffect(() => {
-        setBooks(generateRandomBooks(0));
-    }, []);
+        setBooks(generateRandomBooks(0, language));
+    }, [language]);
 
     const fetchMoreBooks = () => {
         setPage(prevPage => {
             const nextPage = prevPage + 1;
-            setBooks(prevBooks => [...prevBooks, ...generateRandomBooks( nextPage )]);
+            setBooks(prevBooks => [...prevBooks, ...generateRandomBooks( nextPage, language )]);
             return nextPage;
         });
     };
 
     return (
         <Container>
+           <Dropdown className="mb-3" onSelect={(e) => setLanguage(e || 'en')}>
+                <Dropdown.Toggle variant="success">
+                    Change language: {languages[language] || 'English'}
+                </Dropdown.Toggle>
+                <Dropdown.Menu>
+                    {Object.entries(languages).map(([key, value]) => (
+                        <Dropdown.Item key={key} eventKey={key}>
+                            {value}
+                        </Dropdown.Item>
+                    ))}
+                </Dropdown.Menu>
+            </Dropdown>
             <InfiniteScroll
                 dataLength={books.length}
                 next={fetchMoreBooks}
