@@ -6,6 +6,7 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { useLanguage } from "../context/LanguageProvider";
 import React from "react";
 import BookCover from "./BookCover";
+import seedrandom from 'seedrandom';
 
 const capitalizeTitle = (title: string) => {
     return title.charAt(0).toUpperCase() + title.slice(1);
@@ -28,28 +29,43 @@ const languages: { [key: string]: string } = {
     de: 'German',
 };
 
-const generateReview = () => {
+const generateReview = (rng: () => number) => {
     return {
         name: faker.person.fullName(),
         review: capitalizeTitle(faker.word.words({ count: { min: 6, max: 15 }}))
     };
 };
 
-const generateRandomBooks = ( page: number, language: string, reviews: number, likes: number ): Book[] => {
+const randomIncrement = (value: number, rng: () => number) => {
+    return Math.floor(value) + (rng() < (value % 1) ? 1 : 0);
+};
+
+
+const generateRandomBooks = ( page: number, language: string, reviews: number, likes: number, seed: string ): Book[] => {
+    const combinedSeed = `${seed}-${page}`;
+    const rng = seedrandom(combinedSeed);
+    
     const faker = new Faker({
         locale: language === 'fr' ? [fr] : language === 'de' ? [de] : [en],
     });
-    const reviewArray = Array.from({ length: Math.ceil(reviews) }, generateReview);
+    faker.seed(rng.int32());
 
-    return Array.from({ length: 20 }, (_, index) => ({
-        index: page * 20 + index + 1,
-        isbn: generateISBN(),
-        title: capitalizeTitle(faker.word.words()),
-        author: faker.person.fullName(),
-        publisher: `${faker.company.name()}, ${faker.date.past().getFullYear()}`,
-        reviews: reviews >= 1 ? reviewArray : (Math.random() < reviews ? [generateReview()] : []),
-        likes: Math.round((Math.random() * 2 + (likes - 1)))
-    }));
+    return Array.from({ length: 20 }, (_, index) => {
+        const reviewCount = randomIncrement(reviews, rng);
+        const likesCount = randomIncrement(likes, rng);
+    
+        const generatedReviews = Array.from({ length: reviewCount }, () => generateReview(rng));
+    
+        return {
+          index: page * 20 + index + 1,
+          isbn: generateISBN(),
+          title: capitalizeTitle(faker.word.words()),
+          author: faker.person.fullName(),
+          publisher: `${faker.company.name()}, ${faker.date.past().getFullYear()}`,
+          reviews: generatedReviews,
+          likes: likesCount,
+        };
+    });
 };
 
 const BooksTable = () => {
@@ -59,15 +75,25 @@ const BooksTable = () => {
     const [expanded, setExpanded] = useState<{ [isbn: string]: boolean }>({});
     const [likes, setLikes] = useState<number>(5);
     const [reviews, setReviews] = useState<number>(5);
+    const [seed, setSeed] = useState(Math.floor(Math.random() * 1000000).toString());
+
+    const fetchBooks = (reset = false) => {
+        if (reset) {
+            setBooks(generateRandomBooks(0, language, reviews, likes, seed));
+            setPage(0);
+        } else {
+            setBooks(prevBooks => [...prevBooks, ...generateRandomBooks(page, language, reviews, likes, seed)]);
+        }
+    };
 
     useEffect(() => {
-        setBooks(generateRandomBooks(0, language, reviews, likes));
-    }, [language, reviews, likes]);
+        fetchBooks(true);
+    }, [language, reviews, likes, seed]);
 
     const fetchMoreBooks = () => {
         setPage(prevPage => {
             const nextPage = prevPage + 1;
-            setBooks(prevBooks => [...prevBooks, ...generateRandomBooks(nextPage, language, reviews, likes)]);
+            setBooks(prevBooks => [...prevBooks, ...generateRandomBooks(nextPage, language, reviews, likes, seed)]);
             return nextPage;
         });
     };
@@ -76,6 +102,10 @@ const BooksTable = () => {
         setExpanded(prevExpanded => ({
             ...prevExpanded, [isbn]: !prevExpanded[isbn],
         }));
+    };
+
+    const handleSeedDoubleClick = () => {
+        setSeed(Math.floor(Math.random() * 1000000).toString());
     };
 
     return (
@@ -111,66 +141,75 @@ const BooksTable = () => {
                                     <Form.Control type="number" step="0.1" value={reviews} onChange={(e) => setReviews(Number(e.target.value))} />
                                 </Form.Group>
                             </Col>
+                            <Col xs="auto">
+                                <Form.Group controlId="formSeed">
+                                    <Form.Label>Seed</Form.Label>
+                                    <Form.Control type="text" value={seed} onChange={(e) => setSeed(e.target.value)} onDoubleClick={handleSeedDoubleClick} />
+                                </Form.Group>
+                            </Col>
                         </Row>
                     </Form>
                 </Col>
             </Row>
-            <InfiniteScroll
-                dataLength={books.length}
-                next={fetchMoreBooks}
-                hasMore={true}
-                loader={<h4>Loading...</h4>} >
-                <Table striped bordered hover style={{ tableLayout: 'fixed', width: '100%' }}>
-                    <thead className="table-dark">
-                        <tr>
-                            <th style={{ width: '10%' }}>Index</th>
-                            <th style={{ width: '15%' }}>ISBN</th>
-                            <th style={{ width: '25%' }}>Title</th>
-                            <th style={{ width: '25%' }}>Author</th>
-                            <th style={{ width: '25%' }}>Publisher</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    {books.map((book) => (
-                    <React.Fragment key={book.isbn}>
-                        <tr onClick={() => toggleExpanded(book.isbn)} style={{ cursor: 'pointer' }}>
-                            <td>{book.index}</td>
-                            <td>{book.isbn}</td>
-                            <td>{book.title}</td>
-                            <td>{book.author}</td>
-                            <td>{book.publisher}</td>
-                        </tr>
-                        {expanded[book.isbn] && (
+            <div id="scrollableDiv" style={{ height: 600, overflowY: 'auto', overflowX: 'hidden' }}>
+                <InfiniteScroll
+                    dataLength={books.length}
+                    next={fetchMoreBooks}
+                    hasMore={true}
+                    loader={<h4>Loading...</h4>}
+                    scrollableTarget="scrollableDiv" >
+                    <Table striped bordered hover style={{ tableLayout: 'fixed', width: '100%' }} >
+                        <thead className="table-dark">
                             <tr>
-                                <td colSpan={5} style={{ padding: 20 }}>
-                                    <div className="p-3 d-flex" >
-                                        <div style={{ marginRight: '20px' }}>
-                                            <BookCover title={book.title} author={book.author} />
-                                            <span style={{ textAlign: 'center', backgroundColor: '#2A4480', borderRadius: '16px', padding: '5px 10px', color: 'white' }}>
-                                                {book.likes} 👍🏻
-                                            </span>
-                                        </div>
-                                        <div style={{ flex: 1 }}>
-                                            <h3 style={{color: '#06266F'}}>{book.title}</h3>
-                                            <span>by {book.author}</span>
-                                            <p style={{color: 'grey'}}>{book.publisher}</p>
-                                            <h4>Review:</h4>
-                                            {book.reviews.map((review, index) => (
-                                                <div key={index} className="mb-2">
-                                                    <strong>{review.name}:</strong>
-                                                    <p>{review.review}</p>
-                                                </div>
-                                            ))}
-                                        </div>
-                                    </div>
-                                </td>
+                                <th style={{ width: '10%' }}>Index</th>
+                                <th style={{ width: '15%' }}>ISBN</th>
+                                <th style={{ width: '25%' }}>Title</th>
+                                <th style={{ width: '25%' }}>Author</th>
+                                <th style={{ width: '25%' }}>Publisher</th>
                             </tr>
-                        )}
-                    </React.Fragment>
-                ))}
-                    </tbody>
-                </Table>
-            </InfiniteScroll>
+                        </thead>
+                        <tbody>
+                        {books.map((book) => (
+                        <React.Fragment key={book.isbn}>
+                            <tr onClick={() => toggleExpanded(book.isbn)} style={{ cursor: 'pointer' }}>
+                                <td>{book.index}</td>
+                                <td>{book.isbn}</td>
+                                <td>{book.title}</td>
+                                <td>{book.author}</td>
+                                <td>{book.publisher}</td>
+                            </tr>
+                            {expanded[book.isbn] && (
+                                <tr>
+                                    <td colSpan={5} style={{ padding: 20 }}>
+                                        <div className="p-3 d-flex" >
+                                            <div style={{ marginRight: '20px' }}>
+                                                <BookCover title={book.title} author={book.author} />
+                                                <span style={{ textAlign: 'center', backgroundColor: '#2A4480', borderRadius: '16px', padding: '5px 10px', color: 'white' }}>
+                                                    {book.likes} 👍🏻
+                                                </span>
+                                            </div>
+                                            <div style={{ flex: 1 }}>
+                                                <h3 style={{color: '#06266F'}}>{book.title}</h3>
+                                                <span>by {book.author}</span>
+                                                <p style={{color: 'grey'}}>{book.publisher}</p>
+                                                <h4>Review:</h4>
+                                                {book.reviews.map((review, index) => (
+                                                    <div key={index} className="mb-2">
+                                                        <strong>{review.name}:</strong>
+                                                        <p>{review.review}</p>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            )}
+                        </React.Fragment>
+                    ))}
+                        </tbody>
+                    </Table>
+                </InfiniteScroll>
+            </div>
         </Container>
     )
 }
