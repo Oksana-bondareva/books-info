@@ -50,7 +50,7 @@ const randomIncrement = (value: number, rng: () => number) => {
     return Math.floor(value) + (rng() < (value % 1) ? 1 : 0);
 };
 
-const generateRandomBooks = ( page: number, language: string, reviews: number, likes: number, seed: string ): Book[] => {
+const generateRandomBooks = (page: number, language: string, reviews: number, likes: number, seed: string) => {
     const combinedSeed = `${seed}-${page}`;
     const rng = seedrandom(combinedSeed);
     
@@ -62,18 +62,18 @@ const generateRandomBooks = ( page: number, language: string, reviews: number, l
     return Array.from({ length: 20 }, (_, index) => {
         const reviewCount = randomIncrement(reviews, rng);
         const likesCount = randomIncrement(likes, rng);
-    
+        
         const generatedReviews = Array.from({ length: reviewCount }, (__, reviewIndex) => generateReview(`${combinedSeed}-${index}`, reviewIndex));
-    
+        
         return {
-          index: page * 20 + index + 1,
-          isbn: generateISBN(),
-          title: capitalizeTitle(faker.word.words()),
-          author: faker.person.fullName(),
-          publisher: `${faker.company.name()}, ${faker.date.past().getFullYear()}`,
-          reviews: generatedReviews,
-          likes: likesCount,
-          imageUrl: faker.image.dataUri(),
+            index: page * 20 + index + 1,
+            isbn: generateISBN(),
+            title: capitalizeTitle(faker.word.words()),
+            author: faker.person.fullName(),
+            publisher: `${faker.company.name()}, ${faker.date.past().getFullYear()}`,
+            reviews: generatedReviews,
+            likes: likesCount,
+            imageUrl: faker.image.dataUri(),
         };
     });
 };
@@ -88,6 +88,10 @@ const BooksTable = () => {
     const [seed, setSeed] = useState(Math.floor(Math.random() * 1000000).toString());
     const [view, setView] = useState<string>('table');
 
+    const updateSeed = () => {
+        setSeed(Math.floor(Math.random() * 1000000).toString());
+    }
+
     const fetchBooks = (reset = false) => {
         if (reset) {
             setBooks(generateRandomBooks(0, language, reviews, likes, seed));
@@ -99,6 +103,7 @@ const BooksTable = () => {
 
     useEffect(() => {
         fetchBooks(true);
+        console.log(seed)
     }, [language, reviews, likes, seed]);
 
     const fetchMoreBooks = () => {
@@ -155,14 +160,14 @@ const BooksTable = () => {
                             <Col>
                                 <Form.Group controlId="formLikes">
                                     <Form.Label>Likes</Form.Label>
-                                    <Form.Control type="range" min="0" max="10" step="0.1" value={likes} onChange={(e) => setLikes(Number(e.target.value))} />
+                                    <Form.Control type="range" min="0" max="10" step="0.1" value={likes} onChange={(e) => { updateSeed(); setLikes(Number(e.target.value)); fetchBooks(true)}} />
                                     <Form.Control type="number" value={likes} readOnly />
                                 </Form.Group>
                             </Col>
                             <Col>
                                 <Form.Group controlId="formReviews">
                                     <Form.Label>Reviews</Form.Label>
-                                    <Form.Control type="number" step="0.1" value={reviews} onChange={(e) => setReviews(Number(e.target.value))} />
+                                    <Form.Control type="number" step="0.1" value={reviews} onChange={(e) => { updateSeed(); setReviews(Number(e.target.value)); fetchBooks(true)}} />
                                 </Form.Group>
                             </Col>
                             <Col xs="auto">
