@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Container, Table, Dropdown, Row, Form, Col } from "react-bootstrap";
+import { Container, Table, Dropdown, Row, Form, Col, Button } from "react-bootstrap";
 import { Book } from "../types/types";
 import { de, fr, Faker, en, faker } from '@faker-js/faker';
 import InfiniteScroll from "react-infinite-scroll-component";
@@ -7,6 +7,8 @@ import { useLanguage } from "../context/LanguageProvider";
 import React from "react";
 import BookCover from "./BookCover";
 import seedrandom from 'seedrandom';
+import Papa from 'papaparse';
+import FileSaver from "file-saver";
 
 const capitalizeTitle = (title: string) => {
     return title.charAt(0).toUpperCase() + title.slice(1);
@@ -46,7 +48,6 @@ const generateReview = (seed: any, index: number) => {
 const randomIncrement = (value: number, rng: () => number) => {
     return Math.floor(value) + (rng() < (value % 1) ? 1 : 0);
 };
-
 
 const generateRandomBooks = ( page: number, language: string, reviews: number, likes: number, seed: string ): Book[] => {
     const combinedSeed = `${seed}-${page}`;
@@ -116,6 +117,19 @@ const BooksTable = () => {
         setSeed(Math.floor(Math.random() * 1000000).toString());
     };
 
+    const exportToCSV = () => {
+        const csvData = books.map(({ index, isbn, title, author, publisher }) => ({
+            index,
+            isbn,
+            title,
+            author,
+            publisher
+        }));
+        const csv = Papa.unparse(csvData);
+        const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+        FileSaver.saveAs(blob, "books.csv");
+    };
+
     return (
         <Container>
             <Row className="mb-3">
@@ -154,6 +168,11 @@ const BooksTable = () => {
                                     <Form.Label>Seed</Form.Label>
                                     <Form.Control type="text" value={seed} onChange={(e) => setSeed(e.target.value)} onDoubleClick={handleSeedDoubleClick} />
                                 </Form.Group>
+                            </Col>
+                            <Col xs="auto">
+                                <Button variant="primary" onClick={exportToCSV}>
+                                    Export to CSV
+                                </Button>
                             </Col>
                         </Row>
                     </Form>
