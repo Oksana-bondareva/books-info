@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Container, Table, Dropdown, Row, Form, Col, Button } from "react-bootstrap";
+import { Container, Table, Dropdown, Row, Form, Col, Button, ToggleButton, ToggleButtonGroup } from "react-bootstrap";
 import { Book } from "../types/types";
 import { de, fr, Faker, en, faker } from '@faker-js/faker';
 import InfiniteScroll from "react-infinite-scroll-component";
@@ -9,6 +9,7 @@ import BookCover from "./BookCover";
 import seedrandom from 'seedrandom';
 import Papa from 'papaparse';
 import FileSaver from "file-saver";
+import BooksGallery from "./BooksGallery";
 
 const capitalizeTitle = (title: string) => {
     return title.charAt(0).toUpperCase() + title.slice(1);
@@ -85,6 +86,7 @@ const BooksTable = () => {
     const [likes, setLikes] = useState<number>(5);
     const [reviews, setReviews] = useState<number>(5);
     const [seed, setSeed] = useState(Math.floor(Math.random() * 1000000).toString());
+    const [view, setView] = useState<string>('table');
 
     const fetchBooks = (reset = false) => {
         if (reset) {
@@ -174,69 +176,86 @@ const BooksTable = () => {
                                     Export to CSV
                                 </Button>
                             </Col>
+                            <Col xs="auto">
+                                <ToggleButtonGroup type="radio" name="view" defaultValue="table" onChange={(value) => setView(value)}>
+                                    <ToggleButton id="tbg-radio-table" value="table" variant="outline-primary">
+                                        Table View
+                                    </ToggleButton>
+                                    <ToggleButton id="tbg-radio-gallery" value="gallery" variant="outline-primary">
+                                        Gallery View
+                                    </ToggleButton>
+                                </ToggleButtonGroup>
+                            </Col>
                         </Row>
                     </Form>
                 </Col>
             </Row>
-            <div id="scrollableDiv" style={{ height: 600, overflowY: 'auto', overflowX: 'hidden' }}>
-                <InfiniteScroll
-                    dataLength={books.length}
-                    next={fetchMoreBooks}
-                    hasMore={true}
-                    loader={<h4>Loading...</h4>}
-                    scrollableTarget="scrollableDiv" >
-                    <Table striped bordered hover style={{ tableLayout: 'fixed', width: '100%' }} >
-                        <thead className="table-dark">
-                            <tr>
-                                <th style={{ width: '10%' }}>Index</th>
-                                <th style={{ width: '15%' }}>ISBN</th>
-                                <th style={{ width: '25%' }}>Title</th>
-                                <th style={{ width: '25%' }}>Author</th>
-                                <th style={{ width: '25%' }}>Publisher</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        {books.map((book) => (
-                        <React.Fragment key={book.isbn}>
-                            <tr onClick={() => toggleExpanded(book.isbn)} style={{ cursor: 'pointer' }}>
-                                <td>{book.index}</td>
-                                <td>{book.isbn}</td>
-                                <td>{book.title}</td>
-                                <td>{book.author}</td>
-                                <td>{book.publisher}</td>
-                            </tr>
-                            {expanded[book.isbn] && (
+            {view === 'table' ? (
+                <div id="scrollableDiv" style={{ height: 600, overflowY: 'auto', overflowX: 'hidden' }}>
+                    <InfiniteScroll
+                        dataLength={books.length}
+                        next={fetchMoreBooks}
+                        hasMore={true}
+                        loader={<h4>Loading...</h4>}
+                        scrollableTarget="scrollableDiv"
+                    >
+                        <Table striped bordered hover style={{ tableLayout: 'fixed', width: '100%' }}>
+                            <thead className="table-dark" style={{ position: 'sticky', top: 0, zIndex: 1 }}>
                                 <tr>
-                                    <td colSpan={5} style={{ padding: 20 }}>
-                                        <div className="p-3 d-flex" >
-                                            <div style={{ marginRight: '20px' }}>
-                                                <BookCover title={book.title} author={book.author} imageUrl={book.imageUrl} />
-                                                <span style={{ textAlign: 'center', backgroundColor: '#2A4480', borderRadius: '16px', padding: '5px 10px', color: 'white' }}>
-                                                    {book.likes} 👍🏻
-                                                </span>
-                                            </div>
-                                            <div style={{ flex: 1 }}>
-                                                <h3 style={{color: '#06266F'}}>{book.title}</h3>
-                                                <span>by {book.author}</span>
-                                                <p style={{color: 'grey'}}>{book.publisher}</p>
-                                                <h4>Review:</h4>
-                                                {book.reviews.map((review, index) => (
-                                                    <div key={index} className="mb-2">
-                                                        <strong>{review.name}:</strong>
-                                                        <p>{review.review}</p>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    </td>
+                                    <th style={{ width: '10%' }}>Index</th>
+                                    <th style={{ width: '15%' }}>ISBN</th>
+                                    <th style={{ width: '25%' }}>Title</th>
+                                    <th style={{ width: '25%' }}>Author</th>
+                                    <th style={{ width: '25%' }}>Publisher</th>
                                 </tr>
-                            )}
-                        </React.Fragment>
-                    ))}
-                        </tbody>
-                    </Table>
-                </InfiniteScroll>
-            </div>
+                            </thead>
+                            <tbody>
+                            {books.map((book) => (
+                            <React.Fragment key={book.isbn}>
+                                <tr onClick={() => toggleExpanded(book.isbn)} style={{ cursor: 'pointer' }}>
+                                    <td>{book.index}</td>
+                                    <td>{book.isbn}</td>
+                                    <td>{book.title}</td>
+                                    <td>{book.author}</td>
+                                    <td>{book.publisher}</td>
+                                </tr>
+                                {expanded[book.isbn] && (
+                                    <tr>
+                                        <td colSpan={5} style={{ padding: 20 }}>
+                                            <div className="p-3 d-flex">
+                                                <div style={{ marginRight: '20px' }}>
+                                                    <BookCover title={book.title} author={book.author} imageUrl={book.imageUrl} />
+                                                    <span style={{ textAlign: 'center', backgroundColor: '#2A4480', borderRadius: '16px', padding: '5px 10px', color: 'white' }}>
+                                                        {book.likes} 👍🏻
+                                                    </span>
+                                                </div>
+                                                <div style={{ flex: 1 }}>
+                                                    <h3 style={{ color: '#06266F' }}>{book.title}</h3>
+                                                    <span>by {book.author}</span>
+                                                    <p style={{ color: 'grey' }}>{book.publisher}</p>
+                                                    <h4>Review:</h4>
+                                                    {book.reviews.map((review, index) => (
+                                                        <div key={index} className="mb-2">
+                                                            <strong>{review.name}:</strong>
+                                                            <p>{review.review}</p>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                )}
+                            </React.Fragment>
+                        ))}
+                            </tbody>
+                        </Table>
+                    </InfiniteScroll>
+                </div>
+            ) : (
+                <div id="scrollableDiv" style={{ height: 600, overflowY: 'auto', overflowX: 'hidden' }}>
+                    <BooksGallery books={books} fetchMoreBooks={fetchMoreBooks} />
+                </div>
+            )}
         </Container>
     )
 }
