@@ -29,10 +29,17 @@ const languages: { [key: string]: string } = {
     de: 'German',
 };
 
-const generateReview = (rng: () => number) => {
+const generateReview = (seed: any, index: number) => {
+    const nameRng = seedrandom(`${seed}-name-${index}`);
+    const reviewRng = seedrandom(`${seed}-review-${index}`);
+    faker.seed(nameRng.int32());
+    const name = faker.person.fullName();
+    faker.seed(reviewRng.int32());
+    const review = capitalizeTitle(faker.lorem.words(Math.floor(reviewRng() * 10) + 6));
+
     return {
-        name: faker.person.fullName(),
-        review: capitalizeTitle(faker.word.words({ count: { min: 6, max: 15 }}))
+        name,
+        review
     };
 };
 
@@ -54,7 +61,7 @@ const generateRandomBooks = ( page: number, language: string, reviews: number, l
         const reviewCount = randomIncrement(reviews, rng);
         const likesCount = randomIncrement(likes, rng);
     
-        const generatedReviews = Array.from({ length: reviewCount }, () => generateReview(rng));
+        const generatedReviews = Array.from({ length: reviewCount }, (__, reviewIndex) => generateReview(`${combinedSeed}-${index}`, reviewIndex));
     
         return {
           index: page * 20 + index + 1,
@@ -64,6 +71,7 @@ const generateRandomBooks = ( page: number, language: string, reviews: number, l
           publisher: `${faker.company.name()}, ${faker.date.past().getFullYear()}`,
           reviews: generatedReviews,
           likes: likesCount,
+          imageUrl: faker.image.dataUri(),
         };
     });
 };
@@ -183,7 +191,7 @@ const BooksTable = () => {
                                     <td colSpan={5} style={{ padding: 20 }}>
                                         <div className="p-3 d-flex" >
                                             <div style={{ marginRight: '20px' }}>
-                                                <BookCover title={book.title} author={book.author} />
+                                                <BookCover title={book.title} author={book.author} imageUrl={book.imageUrl} />
                                                 <span style={{ textAlign: 'center', backgroundColor: '#2A4480', borderRadius: '16px', padding: '5px 10px', color: 'white' }}>
                                                     {book.likes} 👍🏻
                                                 </span>

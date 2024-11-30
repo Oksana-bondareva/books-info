@@ -13,6 +13,7 @@ export interface Book {
     publisher: string;
     reviews: Review[];
     likes: number;
+    imageUrl: string;
 }
 
 export interface LanguageContextType {
@@ -27,4 +28,5 @@ export interface LanguageProviderProps {
 export interface BookCoverProps {
     title: string;
     author: string;
+    imageUrl: string;
 }
