@@ -1,50 +1,35 @@
-# React + TypeScript + Vite
+# Books Management Table with Infinite Scroll and Gallery View
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+## Deploy: https://incandescent-sorbet-64a28e.netlify.app/
 
-Currently, two official plugins are available:
+## Overview
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+This project is a React-based application that showcases a book management system. Users can view books in either a table or gallery view, dynamically switch between languages, and export book data to a CSV file. It includes features like infinite scrolling for loading more books as the user scrolls down and the ability to generate books with customizable parameters.
 
-## Expanding the ESLint configuration
+## Features
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+* Infinite Scroll: Load more books as the user scrolls down, ensuring smooth and uninterrupted browsing.
 
-- Configure the top-level `parserOptions` property like this:
+* Table and Gallery View: Users can switch between a detailed table view and a more visual gallery view.
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
-```
+* Language Switching: Dynamic language support for English, French, and German.
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
+* Customizable Book Generation: Users can adjust the number of likes and reviews for books, and books are generated with unique details based on these parameters.
 
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
+* CSV Export: Export the displayed books' data to a CSV file for further analysis or record-keeping.
 
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
-```
+## Technologies Used
+
+* React: For building the user interface.
+
+* React-Bootstrap: For responsive and visually appealing UI components.
+
+* Faker.js: For generating fake book data, including titles, authors, publishers, etc.
+
+* InfiniteScroll: For implementing the infinite scrolling functionality.
+
+* Seedrandom: For generating predictable random data.
+
+* Papaparse: For parsing and exporting data to CSV.
+
+* FileSaver: For saving files on the client-side.
